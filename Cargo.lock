@@ -1177,7 +1177,6 @@ name = "skintel"
 version = "0.1.0"
 dependencies = [
  "dotenvy",
- "flate2",
  "reqwest",
  "serde",
  "serde_json",
