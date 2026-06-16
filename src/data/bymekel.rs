@@ -1,4 +1,3 @@
-use crate::domain::models;
 use reqwest;
 use serde::Deserialize;
 
@@ -21,5 +20,6 @@ pub struct Metadata {
 pub async fn fetch_metadata() -> Result<Vec<Metadata>, Box<dyn std::error::Error>> {
     let url = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins_not_grouped.json";
     let data: Vec<Metadata> = reqwest::get(url).await?.json::<Vec<Metadata>>().await?;
+    println!("Metadata fetched successfully");
     Ok(data)
 }

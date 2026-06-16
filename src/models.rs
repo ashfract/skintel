@@ -20,7 +20,6 @@ impl Rarity {
             "Restricted" => Some(Rarity::Restricted),
             "Classified" => Some(Rarity::Classified),
             "Covert" => Some(Rarity::Covert),
-            "Exceedingly Rare" => Some(Rarity::ExceedinglyRare),
             _ => None,
         }
     }
