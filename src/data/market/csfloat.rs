@@ -2,6 +2,8 @@ use dotenvy::dotenv;
 use reqwest;
 use serde::Deserialize;
 
+use crate::data::market;
+
 #[derive(Deserialize)]
 struct Listing {
     id: String,
@@ -41,4 +43,10 @@ async fn get_bulk_price(
     let total: u64 = listings.iter().map(|l| l.price).sum();
     let average = total / listings.len() as u64;
     Ok(average)
+}
+
+// Get specific listings function to do -> name, max float, amount
+
+async fn get_price(market_hash_name: String) -> Result<u64, Box<dyn std::error::Error>> {
+    Ok(get_bulk_price(market_hash_name, 1).await?)
 }
