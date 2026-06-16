@@ -1,8 +1,7 @@
+mod api;
 mod cache;
-mod data;
-mod models;
+mod domain;
+use tokio;
 
-fn main() {
-    let skins = data::build_skins();
-    println!("{:?}", skins);
-}
+#[tokio::main]
+async fn main() {}
