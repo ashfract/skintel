@@ -1,7 +1,5 @@
 use serde::Deserialize;
 
-use crate::domain::models::Rarity::ExceedinglyRare;
-
 #[derive(Deserialize, Debug)]
 pub enum Rarity {
     ConsumerGrade,
@@ -14,7 +12,7 @@ pub enum Rarity {
 }
 
 impl Rarity {
-    fn from_str(s: &str) -> Option<Rarity> {
+    pub fn from_str(s: &str) -> Option<Rarity> {
         match s {
             "Consumer Grade" => Some(Rarity::ConsumerGrade),
             "Industrial Grade" => Some(Rarity::IndustrialGrade),

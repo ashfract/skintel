@@ -4,10 +4,10 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug)]
 pub struct MarketData {
     pub hash_name: String,
-    pub sell_price: i32,
+    pub sell_price: u32,
     #[serde(rename = "sell_price_text")]
     pub formatted_price: String,
-    pub sell_listings: i32,
+    pub sell_listings: u32,
 }
 
 #[derive(Deserialize, Debug)]
