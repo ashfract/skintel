@@ -29,5 +29,5 @@ pub struct Skin {
     pub min_float: f64,
     pub max_float: f64,
     pub rarity: Rarity,
-    pub stattrak: bool,
+    pub collections: String,
 }

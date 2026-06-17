@@ -10,18 +10,23 @@ pub struct RarityWrapper {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct CollectionsWrapper {
+    name: String,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct Metadata {
     #[serde(rename = "name")]
     pub market_hash_name: String,
-    pub min_float: Option<f32>,
-    pub max_float: Option<f32>,
+    pub min_float: Option<f64>,
+    pub max_float: Option<f64>,
     #[serde(rename = "rarity")]
     pub rarity: RarityWrapper,
-    pub stattrak: bool,
+    pub collections: CollectionsWrapper,
 }
 
-pub async fn fetch_metadata() -> Result<Vec<models::Skin>, Box<dyn std::error::Error>> {
-    let url = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins_not_grouped.json";
+pub async fn get_skins() -> Result<Vec<models::Skin>, Box<dyn std::error::Error>> {
+    let url = "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json";
     let data: Vec<Metadata> = reqwest::get(url).await?.json::<Vec<Metadata>>().await?;
 
     let skins = data
@@ -33,7 +38,7 @@ pub async fn fetch_metadata() -> Result<Vec<models::Skin>, Box<dyn std::error::E
                 min_float: m.min_float? as f64,
                 max_float: m.max_float? as f64,
                 rarity: Rarity::from_str(&m.rarity.name)?,
-                stattrak: m.stattrak,
+                collections: m.collections.name,
             })
         })
         .collect();
