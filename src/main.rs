@@ -7,4 +7,9 @@ use tokio;
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
+    let skins = data::bymekel::get_skins().await.expect("ByMekel failed");
+    println!("{:?}", skins[0]);
+
+    let demo = core::tradeup_discovery::group_skins(skins);
+    println!("{:?}", demo.await.get("The Prisma Collection"));
 }

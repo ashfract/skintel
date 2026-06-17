@@ -22,7 +22,8 @@ pub struct Metadata {
     pub max_float: Option<f64>,
     #[serde(rename = "rarity")]
     pub rarity: RarityWrapper,
-    pub collections: CollectionsWrapper,
+    #[serde(default)]
+    pub collections: Vec<CollectionsWrapper>,
 }
 
 pub async fn get_skins() -> Result<Vec<models::Skin>, Box<dyn std::error::Error>> {
@@ -32,13 +33,15 @@ pub async fn get_skins() -> Result<Vec<models::Skin>, Box<dyn std::error::Error>
     let skins = data
         .into_iter()
         .filter_map(|m| {
+            let coll = m.collections.first()?;
+
             Some(models::Skin {
                 market_hash_name: m.market_hash_name,
                 collection: String::new(),
                 min_float: m.min_float? as f64,
                 max_float: m.max_float? as f64,
                 rarity: Rarity::from_str(&m.rarity.name)?,
-                collections: m.collections.name,
+                collections: coll.name.clone(),
             })
         })
         .collect();

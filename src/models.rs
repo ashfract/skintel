@@ -1,5 +1,6 @@
 use serde::Deserialize;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Rarity {
     ConsumerGrade,
     IndustrialGrade,
@@ -23,6 +24,7 @@ impl Rarity {
     }
 }
 
+#[derive(Debug)]
 pub struct Skin {
     pub market_hash_name: String,
     pub collection: String,
