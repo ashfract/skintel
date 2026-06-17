@@ -24,7 +24,20 @@ impl Rarity {
     }
 }
 
-#[derive(Debug)]
+impl Rarity {
+    pub fn previous(&self) -> Option<Rarity> {
+        match self {
+            Rarity::IndustrialGrade => Some(Rarity::ConsumerGrade),
+            Rarity::MilSpec => Some(Rarity::IndustrialGrade),
+            Rarity::Restricted => Some(Rarity::MilSpec),
+            Rarity::Classified => Some(Rarity::Restricted),
+            Rarity::Covert => Some(Rarity::Classified),
+            Rarity::ConsumerGrade => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Skin {
     pub market_hash_name: String,
     pub min_float: f64,
