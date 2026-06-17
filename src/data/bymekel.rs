@@ -37,7 +37,6 @@ pub async fn get_skins() -> Result<Vec<models::Skin>, Box<dyn std::error::Error>
 
             Some(models::Skin {
                 market_hash_name: m.market_hash_name,
-                collection: String::new(),
                 min_float: m.min_float? as f64,
                 max_float: m.max_float? as f64,
                 rarity: Rarity::from_str(&m.rarity.name)?,

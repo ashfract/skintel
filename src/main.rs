@@ -11,5 +11,5 @@ async fn main() {
     println!("{:?}", skins[0]);
 
     let demo = core::tradeup_discovery::group_skins(skins);
-    println!("{:?}", demo.await.get("The Prisma Collection"));
+    println!("\n{:?}", demo.await.get("The Prisma Collection"));
 }

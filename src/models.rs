@@ -27,7 +27,6 @@ impl Rarity {
 #[derive(Debug)]
 pub struct Skin {
     pub market_hash_name: String,
-    pub collection: String,
     pub min_float: f64,
     pub max_float: f64,
     pub rarity: Rarity,
