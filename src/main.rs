@@ -1,3 +1,4 @@
+mod core;
 mod data;
 mod models;
 use std::env;
