@@ -10,6 +10,6 @@ async fn main() {
     let skins = data::bymekel::get_skins().await.expect("ByMekel failed");
     println!("{:?}", skins[0]);
 
-    let demo = core::tradeup_discovery::group_skins(skins);
+    let demo = core::tradeup::group_skins(skins);
     println!("\n{:?}", demo.await.get("The Prisma Collection"));
 }

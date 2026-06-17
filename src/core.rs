@@ -1,1 +1,1 @@
-pub mod tradeup_discovery;
+pub mod tradeup;
