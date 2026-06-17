@@ -45,7 +45,30 @@ async fn get_bulk_price(
     Ok(average)
 }
 
-// Get specific listings function to do -> name, max float, amount
+async fn get_specific_listings(
+    market_hash_name: String,
+    max_float: f64,
+    count: i64,
+) -> Result<Vec<Listing>, Box<dyn std::error::Error>> {
+    let base_url = "https://csfloat.com/api/v1/listings";
+    let mut headers = reqwest::header::HeaderMap::new();
+    dotenv().ok();
+    let api_key = std::env::var("CSFLOAT_API_KEY").expect("CSFLOAT_API_KEY not set");
+    headers.insert(
+        "Authorization",
+        reqwest::header::HeaderValue::from_str(&api_key)
+            .expect("Failed to create HeaderValue from CSFLOAT_API_KEY"),
+    );
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()?;
+    let url = format!(
+        "{}?limit={}&sort_by=lowest_price&market_hash_name={}&category=1&category=2&max_float={}",
+        base_url, count, market_hash_name, max_float
+    );
+    let listings = client.get(url).send().await?.json::<Vec<Listing>>().await?;
+    Ok(listings)
+}
 
 async fn get_price(market_hash_name: String) -> Result<u64, Box<dyn std::error::Error>> {
     Ok(get_bulk_price(market_hash_name, 1).await?)
