@@ -2,8 +2,11 @@ use serde::Deserialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub enum Rarity {
+    #[serde(rename = "Consumer Grade")]
     ConsumerGrade,
+    #[serde(rename = "Industrial Grade")]
     IndustrialGrade,
+    #[serde(rename = "Mil-Spec Grade")]
     MilSpec,
     Restricted,
     Classified,
@@ -15,7 +18,7 @@ impl Rarity {
         match s {
             "Consumer Grade" => Some(Rarity::ConsumerGrade),
             "Industrial Grade" => Some(Rarity::IndustrialGrade),
-            "MilSpec Grade" => Some(Rarity::MilSpec),
+            "Mil-Spec Grade" => Some(Rarity::MilSpec),
             "Restricted" => Some(Rarity::Restricted),
             "Classified" => Some(Rarity::Classified),
             "Covert" => Some(Rarity::Covert),
@@ -67,6 +70,11 @@ pub struct Item {
 pub struct Listing {
     pub price: u64,
     pub item: Item,
+}
+
+#[derive(Deserialize)]
+pub struct CSFloatResponse {
+    pub data: Option<Vec<Listing>>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

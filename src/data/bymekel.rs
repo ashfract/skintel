@@ -44,6 +44,6 @@ pub async fn get_skins() -> Result<Vec<models::Skin>, Box<dyn std::error::Error>
             })
         })
         .collect();
-    println!("Bymykel API fetched successfully");
+    println!("[BYMEKEL] Metadata fetched successfully");
     Ok(skins)
 }

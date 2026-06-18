@@ -6,8 +6,6 @@ pub async fn get_bulk_price(
     market_hash_name: String,
     count: u64,
 ) -> Result<u64, Box<dyn std::error::Error>> {
-    // Takes hash name of a target item and count, finds X (count) cheapest of specified item
-    // and calculates the average price (generic search)
     let base_url = "https://csfloat.com/api/v1/listings";
     let mut headers = reqwest::header::HeaderMap::new();
     dotenv().ok();
@@ -28,9 +26,14 @@ pub async fn get_bulk_price(
         .get(url)
         .send()
         .await?
-        .json::<Vec<models::Listing>>()
-        .await?;
+        .json::<models::CSFloatResponse>()
+        .await?
+        .data
+        .unwrap_or_default();
 
+    if listings.is_empty() {
+        return Ok(0);
+    }
     let total: u64 = listings.iter().map(|l| l.price).sum();
     let average = total / listings.len() as u64;
     Ok(average)
@@ -63,8 +66,14 @@ pub async fn get_specific_listings(
         .get(url)
         .send()
         .await?
-        .json::<Vec<models::Listing>>()
-        .await?;
+        .json::<models::CSFloatResponse>()
+        .await?
+        .data
+        .unwrap_or_default();
+    println!(
+        "[CSFLOAT] Successfully requested data for {}",
+        market_hash_name
+    );
     let mut inputs: Vec<models::TradeUpInput> = Vec::new();
     for listing in listings {
         let input = models::TradeUpInput {

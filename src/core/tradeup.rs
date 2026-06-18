@@ -10,12 +10,18 @@ use std::collections::HashMap;
 pub async fn group_skins(skins: Vec<Skin>) -> HashMap<String, HashMap<Rarity, Vec<Skin>>> {
     let mut map: HashMap<String, HashMap<Rarity, Vec<Skin>>> = HashMap::new();
     for skin in skins {
+        println!(
+            "Adding skin: {} to collection: {}",
+            skin.market_hash_name, skin.collections
+        );
         map.entry(skin.collections.clone())
             .or_default()
             .entry(skin.rarity)
             .or_default()
             .push(skin);
     }
+    println!("[DEBUG] Successfully produced collections (grouped)");
+    //println!("[DEBUG] {:?}", map);
     map
 }
 
@@ -35,28 +41,41 @@ fn max_avg_normalised(target_float: f64, outcome_min: f64, outcome_max: f64) -> 
     (target_float - outcome_min) / (outcome_max - outcome_min).clamp(0.0, 1.0)
 }
 
-fn get_valid_targets(
+pub fn get_valid_targets(
     collections: &HashMap<String, HashMap<Rarity, Vec<Skin>>>,
     input_rarity: &Rarity,
     output_rarity: &Rarity,
 ) -> Vec<Skin> {
-    let mut candidates = Vec::new();
+    println!("DEBUG: Searching for input_rarity: {:?}", input_rarity);
 
-    for (_, rarities) in collections {
-        let inputs = match rarities.get(input_rarity) {
-            Some(s) => s,
-            None => continue,
-        };
-        let outputs = match rarities.get(output_rarity) {
-            Some(s) => s,
-            None => continue,
-        };
-        candidates.extend(outputs.iter().cloned());
-    }
+    let mut candidates: Vec<Skin> = collections
+        .iter()
+        .filter_map(|(name, rarities)| {
+            let has_input = rarities.contains_key(input_rarity);
+            let has_output = rarities.contains_key(output_rarity);
+            println!(
+                "Collection: {}, Has Input: {}, Has Output: {}",
+                name, has_input, has_output
+            );
+            println!("[DEBUG] Input rarity: {:?}", input_rarity);
+
+            if has_input && has_output {
+                rarities.get(output_rarity).cloned()
+            } else {
+                None
+            }
+        })
+        .flatten()
+        .collect();
+
+    println!("[DEBUG] Successfully produced candidates");
+    //println!("{:?}", candidates);
+    candidates.sort_by(|a, b| a.market_hash_name.cmp(&b.market_hash_name));
+    candidates.dedup_by(|a, b| a.market_hash_name == b.market_hash_name);
     candidates
 }
 
-async fn get_profitable_targets(
+pub async fn get_profitable_targets(
     collections: &HashMap<String, HashMap<Rarity, Vec<Skin>>>,
     candidates: Vec<Skin>,
 ) -> Result<Vec<Skin>, Box<dyn std::error::Error>> {
@@ -64,6 +83,7 @@ async fn get_profitable_targets(
     for target in candidates {
         let target_price =
             data::market::csfloat::get_price(target.market_hash_name.clone()).await?;
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         let input_pool = collections
             .get(&target.collections)
             .and_then(|r| Rarity::previous(&target.rarity).and_then(|prev| r.get(&prev)));
@@ -76,7 +96,12 @@ async fn get_profitable_targets(
         }
         let mut min_input_price = u64::MAX;
         for skin in input_pool {
+            println!(
+                "[DEBUG] Checking target: {} -> Input: {}",
+                target.market_hash_name, skin.market_hash_name
+            );
             let price = data::market::csfloat::get_price(skin.market_hash_name.clone()).await?;
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
             if price < min_input_price {
                 min_input_price = price;
             }
@@ -85,10 +110,11 @@ async fn get_profitable_targets(
             targets.push(target);
         }
     }
+    println!("[DEBUG] Profitable targets identified");
     Ok(targets)
 }
 
-async fn fetch_inputs(
+pub async fn fetch_inputs(
     profitable_targets: Vec<Skin>,
     collections: &HashMap<String, HashMap<Rarity, Vec<Skin>>>,
 ) -> Result<Vec<(Skin, models::TradeUpInput)>, Box<dyn std::error::Error>> {
@@ -140,7 +166,7 @@ async fn fetch_inputs(
     Ok(results)
 }
 
-async fn construct_tradeups(
+pub async fn construct_tradeups(
     collections: &HashMap<String, HashMap<Rarity, Vec<Skin>>>,
     io_pair: Vec<(Skin, TradeUpInput)>,
 ) -> Result<Vec<models::TradeUp>, Box<dyn std::error::Error>> {
@@ -156,7 +182,7 @@ async fn construct_tradeups(
             })
             .or_insert((target, input));
     }
-    let mut outputs: Vec<TradeUpOutput> = Vec::new();
+    //let mut outputs: Vec<TradeUpOutput> = Vec::new();
     for (target, input) in deduped.values() {
         let rarities = match collections.get(&target.collections) {
             Some(r) => r,
