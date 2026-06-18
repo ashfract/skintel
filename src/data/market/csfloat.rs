@@ -76,6 +76,8 @@ pub async fn get_specific_listings(
             collection: listing.item.collection,
             float_value: listing.item.float_value,
             price: listing.price,
+            min_float: None,
+            max_float: None,
         };
         inputs.push(input);
     }

@@ -6,7 +6,7 @@ use tokio;
 
 #[tokio::main]
 async fn main() {
-    let args: Vec<String> = env::args().collect();
+    let _args: Vec<String> = env::args().collect();
     let skins = data::bymekel::get_skins().await.expect("ByMekel failed");
     println!("{:?}", skins[0]);
 

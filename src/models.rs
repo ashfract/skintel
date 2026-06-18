@@ -76,6 +76,8 @@ pub struct TradeUpInput {
     pub price: u64,
     pub rarity: Rarity,
     pub collection: String,
+    pub min_float: Option<f64>,
+    pub max_float: Option<f64>,
 }
 
 #[derive(Debug, Clone)]
@@ -86,6 +88,8 @@ pub struct TradeUpOutput {
     pub rarity: Rarity,
     pub collection: String,
     pub probability: f64,
+    pub min_float: Option<f64>,
+    pub max_float: Option<f64>,
 }
 
 #[derive(Debug, Clone)]

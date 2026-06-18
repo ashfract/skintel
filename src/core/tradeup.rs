@@ -2,6 +2,9 @@ use crate::data;
 use crate::models;
 use crate::models::Rarity;
 use crate::models::Skin;
+use crate::models::TradeUp;
+use crate::models::TradeUpInput;
+use crate::models::TradeUpOutput;
 use std::collections::HashMap;
 
 pub async fn group_skins(skins: Vec<Skin>) -> HashMap<String, HashMap<Rarity, Vec<Skin>>> {
@@ -118,10 +121,12 @@ async fn fetch_inputs(
                 Ok(v) => v.into_iter().next(),
                 Err(_) => continue,
             };
-            let sample = match sample {
+            let mut sample = match sample {
                 Some(s) => s,
                 None => continue,
             };
+            sample.min_float = Some(input.min_float);
+            sample.max_float = Some(input.max_float);
             inputs.push(sample.clone());
         }
         inputs.sort_by_key(|i| i.price);
@@ -129,7 +134,82 @@ async fn fetch_inputs(
             Some(i) => i,
             None => continue,
         };
+
         results.push((target, cheapest_input));
     }
     Ok(results)
+}
+
+async fn construct_tradeups(
+    collections: &HashMap<String, HashMap<Rarity, Vec<Skin>>>,
+    io_pair: Vec<(Skin, TradeUpInput)>,
+) -> Result<Vec<models::TradeUp>, Box<dyn std::error::Error>> {
+    let mut tradeups = Vec::new();
+    let mut deduped: HashMap<String, (Skin, models::TradeUpInput)> = HashMap::new();
+    for (target, input) in io_pair {
+        deduped
+            .entry(target.collections.clone())
+            .and_modify(|e| {
+                if input.price < e.1.price {
+                    *e = (target.clone(), input.clone());
+                }
+            })
+            .or_insert((target, input));
+    }
+    let mut outputs: Vec<TradeUpOutput> = Vec::new();
+    for (target, input) in deduped.values() {
+        let rarities = match collections.get(&target.collections) {
+            Some(r) => r,
+            None => continue,
+        };
+        let output_pool = match rarities.get(&target.rarity) {
+            Some(o) => o,
+            None => continue,
+        };
+        let mut tradeup_outputs: Vec<TradeUpOutput> = Vec::new();
+        let avg_normalised = normalise(
+            input.float_value,
+            input.min_float.unwrap_or(0.0),
+            input.max_float.unwrap_or(1.0),
+        );
+        for output in output_pool {
+            let tradeup_output = TradeUpOutput {
+                market_hash_name: output.market_hash_name.clone(),
+                float_value: outcome_float(avg_normalised, output.min_float, output.max_float),
+                price: data::market::csfloat::get_price(output.market_hash_name.clone()).await?,
+                rarity: output.rarity,
+                collection: output.collections.clone(),
+                probability: 0.0,
+                min_float: Some(output.min_float),
+                max_float: Some(output.max_float),
+            };
+            tradeup_outputs.push(tradeup_output);
+        }
+        let probability = 1.0 / tradeup_outputs.len() as f64; // PLACEHOLDER UNTIL FILLERS
+        for out in &mut tradeup_outputs {
+            out.probability = probability;
+        }
+        let total_cost = input.price * 10; // placeholder
+        let worst_value = tradeup_outputs.iter().map(|o| o.price).min().unwrap_or(0);
+        let best_value = tradeup_outputs.iter().map(|o| o.price).max().unwrap_or(1);
+        let ev = tradeup_outputs
+            .iter()
+            .map(|o| o.price as f64 * o.probability)
+            .sum();
+
+        let trade_up = TradeUp {
+            input: input.clone(),
+            input_count: 10, // placeholder, need to do ratios later
+            filler: None,
+            filler_count: 0, // placeholder
+            outputs: tradeup_outputs,
+            total_cost, // placeholder
+            worst_value,
+            best_value,
+            ev,
+            roi: (ev - total_cost as f64) / total_cost as f64,
+        };
+        tradeups.push(trade_up);
+    }
+    Ok(tradeups)
 }
