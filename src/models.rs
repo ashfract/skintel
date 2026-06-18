@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub enum Rarity {
     ConsumerGrade,
     IndustrialGrade,
@@ -22,9 +22,6 @@ impl Rarity {
             _ => None,
         }
     }
-}
-
-impl Rarity {
     pub fn previous(&self) -> Option<Rarity> {
         match self {
             Rarity::IndustrialGrade => Some(Rarity::ConsumerGrade),
@@ -35,13 +32,48 @@ impl Rarity {
             Rarity::ConsumerGrade => None,
         }
     }
+    pub fn from_int(i: i32) -> Option<Rarity> {
+        match i {
+            1 => Some(Rarity::ConsumerGrade),
+            2 => Some(Rarity::IndustrialGrade),
+            3 => Some(Rarity::MilSpec),
+            4 => Some(Rarity::Restricted),
+            5 => Some(Rarity::Classified),
+            6 => Some(Rarity::Covert),
+            _ => None,
+        }
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Skin {
     pub market_hash_name: String,
     pub min_float: f64,
     pub max_float: f64,
     pub rarity: Rarity,
     pub collections: String,
+}
+
+// For CSFLOAT API return
+#[derive(Deserialize, Debug, Clone)]
+pub struct Item {
+    pub float_value: f64,
+    pub market_hash_name: String,
+    pub collection: String,
+    pub rarity: i32,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Listing {
+    pub price: u64,
+    pub item: Item,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct TradeUpInput {
+    pub market_hash_name: String,
+    pub float_value: f64,
+    pub price: u64,
+    pub rarity: Rarity,
+    pub collection: String,
 }
