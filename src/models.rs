@@ -77,3 +77,27 @@ pub struct TradeUpInput {
     pub rarity: Rarity,
     pub collection: String,
 }
+
+#[derive(Debug, Clone)]
+pub struct TradeUpOutput {
+    pub market_hash_name: String,
+    pub float_value: f64,
+    pub price: u64,
+    pub rarity: Rarity,
+    pub collection: String,
+    pub probability: f64,
+}
+
+#[derive(Debug, Clone)]
+pub struct TradeUp {
+    pub input: TradeUpInput,
+    pub input_count: u32,
+    pub filler: Option<TradeUpInput>,
+    pub filler_count: u32,
+    pub outputs: Vec<TradeUpOutput>,
+    pub total_cost: u64,
+    pub worst_value: u64,
+    pub best_value: u64,
+    pub ev: f64,
+    pub roi: f64,
+}
