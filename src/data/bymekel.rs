@@ -16,14 +16,26 @@ pub struct CollectionsWrapper {
 
 #[derive(Deserialize, Debug)]
 pub struct Metadata {
-    #[serde(rename = "name")]
-    pub market_hash_name: String,
+    pub name: String,
+    #[serde(deserialize_with = "deserialize_optional_string_to_i32")]
+    pub paint_index: Option<i32>,
     pub min_float: Option<f64>,
     pub max_float: Option<f64>,
     #[serde(rename = "rarity")]
     pub rarity: RarityWrapper,
     #[serde(default)]
     pub collections: Vec<CollectionsWrapper>,
+}
+
+fn deserialize_optional_string_to_i32<'de, D>(deserializer: D) -> Result<Option<i32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt: Option<String> = serde::Deserialize::deserialize(deserializer)?;
+    match opt {
+        Some(s) => s.parse::<i32>().map(Some).map_err(serde::de::Error::custom),
+        None => Ok(None),
+    }
 }
 
 pub async fn get_skins() -> Result<Vec<models::Skin>, Box<dyn std::error::Error>> {
@@ -36,7 +48,8 @@ pub async fn get_skins() -> Result<Vec<models::Skin>, Box<dyn std::error::Error>
             let coll = m.collections.first()?;
 
             Some(models::Skin {
-                market_hash_name: m.market_hash_name,
+                name: m.name,
+                paint_index: m.paint_index?,
                 min_float: m.min_float? as f64,
                 max_float: m.max_float? as f64,
                 rarity: Rarity::from_str(&m.rarity.name)?,

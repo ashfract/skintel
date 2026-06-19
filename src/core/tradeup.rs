@@ -10,10 +10,6 @@ use std::collections::HashMap;
 pub async fn group_skins(skins: Vec<Skin>) -> HashMap<String, HashMap<Rarity, Vec<Skin>>> {
     let mut map: HashMap<String, HashMap<Rarity, Vec<Skin>>> = HashMap::new();
     for skin in skins {
-        println!(
-            "Adding skin: {} to collection: {}",
-            skin.market_hash_name, skin.collections
-        );
         map.entry(skin.collections.clone())
             .or_default()
             .entry(skin.rarity)
@@ -46,19 +42,11 @@ pub fn get_valid_targets(
     input_rarity: &Rarity,
     output_rarity: &Rarity,
 ) -> Vec<Skin> {
-    println!("DEBUG: Searching for input_rarity: {:?}", input_rarity);
-
     let mut candidates: Vec<Skin> = collections
         .iter()
         .filter_map(|(name, rarities)| {
             let has_input = rarities.contains_key(input_rarity);
             let has_output = rarities.contains_key(output_rarity);
-            println!(
-                "Collection: {}, Has Input: {}, Has Output: {}",
-                name, has_input, has_output
-            );
-            println!("[DEBUG] Input rarity: {:?}", input_rarity);
-
             if has_input && has_output {
                 rarities.get(output_rarity).cloned()
             } else {
@@ -70,8 +58,8 @@ pub fn get_valid_targets(
 
     println!("[DEBUG] Successfully produced candidates");
     //println!("{:?}", candidates);
-    candidates.sort_by(|a, b| a.market_hash_name.cmp(&b.market_hash_name));
-    candidates.dedup_by(|a, b| a.market_hash_name == b.market_hash_name);
+    candidates.sort_by(|a, b| a.name.cmp(&b.name));
+    candidates.dedup_by(|a, b| a.name == b.name);
     candidates
 }
 
@@ -82,7 +70,7 @@ pub async fn get_profitable_targets(
     let mut targets: Vec<Skin> = Vec::new();
     for target in candidates {
         let target_price =
-            data::market::csfloat::get_price(target.market_hash_name.clone()).await?;
+            data::market::csfloat::get_price(format!("{} (Factory New)", target.name)).await?;
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         let input_pool = collections
             .get(&target.collections)
@@ -96,21 +84,26 @@ pub async fn get_profitable_targets(
         }
         let mut min_input_price = u64::MAX;
         for skin in input_pool {
-            println!(
-                "[DEBUG] Checking target: {} -> Input: {}",
-                target.market_hash_name, skin.market_hash_name
-            );
-            let price = data::market::csfloat::get_price(skin.market_hash_name.clone()).await?;
+            println!("[DEBUG] Checking: {}", skin.name);
+            let fn_name = format!("{} (Factory New)", skin.name);
+            let price = data::market::csfloat::get_price(fn_name).await?;
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
             if price < min_input_price {
                 min_input_price = price;
             }
         }
+        println!(
+            "[DEBUG] {} - target: {}, min_input*10: {}",
+            target.name,
+            target_price,
+            min_input_price * 10
+        );
         if target_price > min_input_price * 10 {
             targets.push(target);
         }
     }
     println!("[DEBUG] Profitable targets identified");
+    println!("{:?}", targets);
     Ok(targets)
 }
 
@@ -138,7 +131,7 @@ pub async fn fetch_inputs(
             let denormalised_max =
                 denormalise(max_avg_normalised, input.min_float, input.max_float);
             let results = data::market::csfloat::get_specific_listings(
-                input.market_hash_name.clone(),
+                input.paint_index,
                 denormalised_max,
                 1,
             )
@@ -199,16 +192,18 @@ pub async fn construct_tradeups(
             input.max_float.unwrap_or(1.0),
         );
         for output in output_pool {
+            let fn_name = format!("{} (Factory New)", output.name);
             let tradeup_output = TradeUpOutput {
-                market_hash_name: output.market_hash_name.clone(),
+                market_hash_name: output.name.clone(),
                 float_value: outcome_float(avg_normalised, output.min_float, output.max_float),
-                price: data::market::csfloat::get_price(output.market_hash_name.clone()).await?,
+                price: data::market::csfloat::get_price(fn_name).await?,
                 rarity: output.rarity,
                 collection: output.collections.clone(),
                 probability: 0.0,
                 min_float: Some(output.min_float),
                 max_float: Some(output.max_float),
             };
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
             tradeup_outputs.push(tradeup_output);
         }
         let probability = 1.0 / tradeup_outputs.len() as f64; // PLACEHOLDER UNTIL FILLERS

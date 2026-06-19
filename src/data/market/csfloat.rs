@@ -18,10 +18,14 @@ pub async fn get_bulk_price(
     let client = reqwest::Client::builder()
         .default_headers(headers)
         .build()?;
+    let encoded_name = urlencoding::encode(&market_hash_name);
     let url = format!(
-        "{}?limit={}&sort_by=lowest_price&market_hash_name={}&category=1&category=2&type=buy_now",
-        base_url, count, market_hash_name
+        "{}?limit={}&sort_by=lowest_price&market_hash_name={}&category=1&type=buy_now",
+        base_url, count, encoded_name
     );
+    println!("[DEBUG] URL: {}", url);
+    let response = client.get(&url).send().await?;
+    println!("[DEBUG] Status: {}", response.status());
     let listings = client
         .get(url)
         .send()
@@ -30,7 +34,11 @@ pub async fn get_bulk_price(
         .await?
         .data
         .unwrap_or_default();
-
+    println!(
+        "[DEBUG] {} listings found for {}\n",
+        listings.len(),
+        market_hash_name
+    );
     if listings.is_empty() {
         return Ok(0);
     }
@@ -42,7 +50,7 @@ pub async fn get_bulk_price(
 // Get specific listings function to do -> name, max float, amount
 //
 pub async fn get_specific_listings(
-    market_hash_name: String,
+    paint_index: i32,
     max_float: f64,
     count: i64,
 ) -> Result<Vec<models::TradeUpInput>, Box<dyn std::error::Error>> {
@@ -59,8 +67,8 @@ pub async fn get_specific_listings(
         .default_headers(headers)
         .build()?;
     let url = format!(
-        "{}?limit={}&sort_by=lowest_price&market_hash_name={}&category=1&category=2&max_float={}&type=buy_now",
-        base_url, count, market_hash_name, max_float
+        "{}?limit={}&sort_by=lowest_price&paint_index={}&category=1&max_float={}&type=buy_now",
+        base_url, count, paint_index, max_float
     );
     let listings: Vec<models::Listing> = client
         .get(url)
@@ -71,8 +79,8 @@ pub async fn get_specific_listings(
         .data
         .unwrap_or_default();
     println!(
-        "[CSFLOAT] Successfully requested data for {}",
-        market_hash_name
+        "[CSFLOAT] Successfully requested data paint_index: {}",
+        paint_index
     );
     let mut inputs: Vec<models::TradeUpInput> = Vec::new();
     for listing in listings {
