@@ -1,3 +1,4 @@
+use crate::core::tradeup;
 use crate::data;
 use crate::models;
 use crate::models::Rarity;
@@ -233,4 +234,11 @@ pub async fn construct_tradeups(
         tradeups.push(trade_up);
     }
     Ok(tradeups)
+}
+
+pub async fn process_tradeups(tradeups: Vec<TradeUp>) -> Vec<TradeUp> {
+    let mut tradeups = tradeups;
+    tradeups.sort_by(|a, b| b.roi.partial_cmp(&a.roi).unwrap());
+    tradeups.retain(|t| t.roi > 0.0);
+    tradeups
 }

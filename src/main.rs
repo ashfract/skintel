@@ -2,10 +2,11 @@ mod core;
 mod data;
 mod models;
 use std::env;
-use tokio;
+use tokio::{self, process};
 
 use crate::core::tradeup::{
     construct_tradeups, fetch_inputs, get_profitable_targets, get_valid_targets, group_skins,
+    process_tradeups,
 };
 use crate::models::Rarity;
 
@@ -20,8 +21,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let profitable = get_profitable_targets(&collections, candidates).await?;
     let inputs = fetch_inputs(profitable, &collections).await?;
     let tradeups = construct_tradeups(&collections, inputs).await?;
+    let processed_tradeups = process_tradeups(tradeups).await;
 
-    println!("{:?}", tradeups);
-
+    println!("{:?}", processed_tradeups);
     Ok(())
 }
