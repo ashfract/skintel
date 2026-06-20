@@ -23,6 +23,12 @@ pub async fn get_bulk_price(
         base_url, count, encoded_name
     );
     let response = client.get(&url).send().await?;
+    if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        println!(
+            "[RATE LIMIT] hit in get_bulk_price for {}",
+            market_hash_name
+        );
+    }
     let listings = response
         .json::<models::CSFloatResponse>()
         .await?
@@ -63,10 +69,14 @@ pub async fn get_specific_listings(
         "{}?limit={}&sort_by=lowest_price&paint_index={}&category=1&max_float={}&type=buy_now",
         base_url, count, paint_index, max_float
     );
-    let listings: Vec<models::Listing> = client
-        .get(url)
-        .send()
-        .await?
+    let response = client.get(&url).send().await?;
+    if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        println!(
+            "[RATE LIMIT] hit in get_specific_listings for paint_index {}",
+            paint_index
+        );
+    }
+    let listings: Vec<models::Listing> = response
         .json::<models::CSFloatResponse>()
         .await?
         .data
