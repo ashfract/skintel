@@ -67,12 +67,24 @@ pub fn get_valid_targets(
 pub async fn get_profitable_targets(
     collections: &HashMap<String, HashMap<Rarity, Vec<Skin>>>,
     candidates: Vec<Skin>,
-) -> Result<Vec<Skin>, Box<dyn std::error::Error>> {
-    let mut targets: Vec<Skin> = Vec::new();
+    price_cache: &mut HashMap<String, u64>,
+) -> Result<Vec<(Skin, TradeUpInput)>, Box<dyn std::error::Error>> {
+    let mut targets: Vec<(Skin, TradeUpInput)> = Vec::new();
     for target in candidates {
-        let target_price =
-            data::market::csfloat::get_price(format!("{} (Factory New)", target.name)).await?;
+        let target_fn_name = format!("{} (Factory New)", target.name);
+        let target_price = match price_cache.get(&target_fn_name) {
+            Some(p) => {
+                println!("Cache hit");
+                *p
+            }
+            None => {
+                let p = data::market::csfloat::get_price(target_fn_name.clone()).await?;
+                price_cache.insert(target_fn_name.clone(), p);
+                p
+            }
+        };
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
         let input_pool = collections
             .get(&target.collections)
             .and_then(|r| Rarity::previous(&target.rarity).and_then(|prev| r.get(&prev)));
@@ -83,61 +95,16 @@ pub async fn get_profitable_targets(
         if input_pool.is_empty() {
             continue;
         }
-        let mut min_input_price = u64::MAX;
-        for skin in input_pool {
-            println!("[DEBUG] Checking: {}", skin.name);
-            let fn_name = format!("{} (Factory New)", skin.name);
-            let price = data::market::csfloat::get_price(fn_name).await?;
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-            if price < min_input_price {
-                min_input_price = price;
-            }
-        }
-        println!(
-            "[DEBUG] {} - target: {}, min_input*10: {}",
-            target.name,
-            target_price,
-            min_input_price * 10
-        );
-        if target_price > min_input_price * 10 {
-            targets.push(target);
-        }
-    }
-    println!("[DEBUG] Profitable targets identified");
-    println!("{:?}", targets);
-    Ok(targets)
-}
 
-pub async fn fetch_inputs(
-    profitable_targets: Vec<Skin>,
-    collections: &HashMap<String, HashMap<Rarity, Vec<Skin>>>,
-) -> Result<Vec<(Skin, models::TradeUpInput)>, Box<dyn std::error::Error>> {
-    let mut results = Vec::new();
-    for target in profitable_targets {
         let max_avg_normalised = max_avg_normalised(0.07, target.min_float, target.max_float);
-        let input_rarity = match Rarity::previous(&target.rarity) {
-            Some(r) => r,
-            None => continue,
-        };
-        let rarities = match collections.get(&target.collections) {
-            Some(r) => r,
-            None => continue,
-        };
-        let input_pool = match rarities.get(&input_rarity) {
-            Some(i) => i,
-            None => continue,
-        };
-        let mut inputs: Vec<models::TradeUpInput> = Vec::new();
-        for input in input_pool {
-            let denormalised_max =
-                denormalise(max_avg_normalised, input.min_float, input.max_float);
-            let results = data::market::csfloat::get_specific_listings(
-                input.paint_index,
-                denormalised_max,
-                1,
-            )
-            .await;
-            let sample = match results {
+        let mut inputs: Vec<TradeUpInput> = Vec::new();
+        for skin in input_pool {
+            let denormalised_max = denormalise(max_avg_normalised, skin.min_float, skin.max_float);
+            let listings =
+                data::market::csfloat::get_specific_listings(skin.paint_index, denormalised_max, 1)
+                    .await;
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            let sample = match listings {
                 Ok(v) => v.into_iter().next(),
                 Err(_) => continue,
             };
@@ -145,9 +112,9 @@ pub async fn fetch_inputs(
                 Some(s) => s,
                 None => continue,
             };
-            sample.min_float = Some(input.min_float);
-            sample.max_float = Some(input.max_float);
-            inputs.push(sample.clone());
+            sample.min_float = Some(skin.min_float);
+            sample.max_float = Some(skin.max_float);
+            inputs.push(sample);
         }
         inputs.sort_by_key(|i| i.price);
         let cheapest_input = match inputs.into_iter().next() {
@@ -155,9 +122,11 @@ pub async fn fetch_inputs(
             None => continue,
         };
 
-        results.push((target, cheapest_input));
+        if target_price > cheapest_input.price * 10 {
+            targets.push((target, cheapest_input));
+        }
     }
-    Ok(results)
+    Ok(targets)
 }
 
 pub async fn construct_tradeups(

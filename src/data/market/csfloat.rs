@@ -1,7 +1,6 @@
-use crate::models;
+rustuse crate::models;
 use dotenvy::dotenv;
 use reqwest;
-
 pub async fn get_bulk_price(
     market_hash_name: String,
     count: u64,
@@ -23,21 +22,16 @@ pub async fn get_bulk_price(
         "{}?limit={}&sort_by=lowest_price&market_hash_name={}&category=1&type=buy_now",
         base_url, count, encoded_name
     );
-    println!("[DEBUG] URL: {}", url);
     let response = client.get(&url).send().await?;
-    println!("[DEBUG] Status: {}", response.status());
-    let listings = client
-        .get(url)
-        .send()
-        .await?
+    let listings = response
         .json::<models::CSFloatResponse>()
         .await?
         .data
         .unwrap_or_default();
     println!(
-        "[DEBUG] {} listings found for {}\n",
-        listings.len(),
-        market_hash_name
+        "[CSFLOAT] get_bulk_price: {} -> {} listings",
+        market_hash_name,
+        listings.len()
     );
     if listings.is_empty() {
         return Ok(0);
@@ -46,7 +40,6 @@ pub async fn get_bulk_price(
     let average = total / listings.len() as u64;
     Ok(average)
 }
-
 // Get specific listings function to do -> name, max float, amount
 //
 pub async fn get_specific_listings(
@@ -79,8 +72,9 @@ pub async fn get_specific_listings(
         .data
         .unwrap_or_default();
     println!(
-        "[CSFLOAT] Successfully requested data paint_index: {}",
-        paint_index
+        "[CSFLOAT] get_specific_listings: paint_index {} -> {} listings",
+        paint_index,
+        listings.len()
     );
     let mut inputs: Vec<models::TradeUpInput> = Vec::new();
     for listing in listings {
@@ -100,7 +94,6 @@ pub async fn get_specific_listings(
     }
     Ok(inputs)
 }
-
 pub async fn get_price(market_hash_name: String) -> Result<u64, Box<dyn std::error::Error>> {
     Ok(get_bulk_price(market_hash_name, 1).await?)
 }
