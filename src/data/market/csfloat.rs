@@ -1,4 +1,4 @@
-rustuse crate::models;
+use crate::models;
 use dotenvy::dotenv;
 use reqwest;
 pub async fn get_bulk_price(

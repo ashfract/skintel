@@ -1,4 +1,3 @@
-use crate::core::tradeup;
 use crate::data;
 use crate::models;
 use crate::models::Rarity;
@@ -17,8 +16,7 @@ pub async fn group_skins(skins: Vec<Skin>) -> HashMap<String, HashMap<Rarity, Ve
             .or_default()
             .push(skin);
     }
-    println!("[DEBUG] Successfully produced collections (grouped)");
-    //println!("[DEBUG] {:?}", map);
+    println!("[GROUPING] {} collections produced", map.len());
     map
 }
 
@@ -57,10 +55,9 @@ pub fn get_valid_targets(
         .flatten()
         .collect();
 
-    println!("[DEBUG] Successfully produced candidates");
-    //println!("{:?}", candidates);
     candidates.sort_by(|a, b| a.name.cmp(&b.name));
     candidates.dedup_by(|a, b| a.name == b.name);
+    println!("[TARGETING] {} candidates produced", candidates.len());
     candidates
 }
 
@@ -74,7 +71,7 @@ pub async fn get_profitable_targets(
         let target_fn_name = format!("{} (Factory New)", target.name);
         let target_price = match price_cache.get(&target_fn_name) {
             Some(p) => {
-                println!("Cache hit");
+                println!("[CACHE] hit: {}", target_fn_name);
                 *p
             }
             None => {
@@ -122,10 +119,21 @@ pub async fn get_profitable_targets(
             None => continue,
         };
 
+        println!(
+            "[PROFIT CHECK] {} - target: {}, cheapest_input*10: {}",
+            target.name,
+            target_price,
+            cheapest_input.price * 10
+        );
+
         if target_price > cheapest_input.price * 10 {
             targets.push((target, cheapest_input));
         }
     }
+    println!(
+        "[TARGETING] {} profitable targets identified",
+        targets.len()
+    );
     Ok(targets)
 }
 
@@ -145,7 +153,8 @@ pub async fn construct_tradeups(
             })
             .or_insert((target, input));
     }
-    //let mut outputs: Vec<TradeUpOutput> = Vec::new();
+    println!("[TRADEUP] {} unique collections after dedup", deduped.len());
+
     for (target, input) in deduped.values() {
         let rarities = match collections.get(&target.collections) {
             Some(r) => r,
@@ -202,6 +211,7 @@ pub async fn construct_tradeups(
         };
         tradeups.push(trade_up);
     }
+    println!("[TRADEUP] {} tradeups constructed", tradeups.len());
     Ok(tradeups)
 }
 
@@ -209,5 +219,9 @@ pub async fn process_tradeups(tradeups: Vec<TradeUp>) -> Vec<TradeUp> {
     let mut tradeups = tradeups;
     tradeups.sort_by(|a, b| b.roi.partial_cmp(&a.roi).unwrap());
     tradeups.retain(|t| t.roi > 0.0);
+    println!(
+        "[PROCESS] {} profitable tradeups after filtering",
+        tradeups.len()
+    );
     tradeups
 }
