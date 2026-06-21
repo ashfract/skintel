@@ -19,11 +19,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let metadata = data::bymekel::get_skins().await?; // works
     let collections = group_skins(metadata).await; // works
     let mut candidates = get_valid_targets(&collections, &Rarity::MilSpec, &Rarity::Restricted);
-    candidates.truncate(20);
+    candidates.truncate(10);
     let profitable = get_profitable_targets(&collections, candidates, &mut price_cache).await?;
     let tradeups = construct_tradeups(&collections, profitable).await?;
-    //let processed_tradeups = process_tradeups(tradeups).await;
+    let processed_tradeups = process_tradeups(tradeups).await;
 
-    println!("{:?}", tradeups);
+    println!("{:?}", processed_tradeups);
     Ok(())
 }

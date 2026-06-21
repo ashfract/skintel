@@ -171,11 +171,20 @@ pub async fn construct_tradeups(
             input.max_float.unwrap_or(1.0),
         );
         for output in output_pool {
-            let fn_name = format!("{} (Factory New)", output.name);
+            let float_value = outcome_float(avg_normalised, output.min_float, output.max_float);
+            let wear = match float_value {
+                0.0..0.07 => "Factory New",
+                0.07..0.15 => "Minimal Wear",
+                0.15..0.38 => "Field-Tested",
+                0.38..0.45 => "Well-Worn",
+                0.45..1.0 => "Battle-Scarred",
+                _ => continue,
+            };
+            let market_hash_name = format!("{} ({})", output.name, wear);
             let tradeup_output = TradeUpOutput {
-                market_hash_name: output.name.clone(),
-                float_value: outcome_float(avg_normalised, output.min_float, output.max_float),
-                price: data::market::csfloat::get_price(fn_name).await?,
+                market_hash_name: market_hash_name.clone(),
+                float_value,
+                price: data::market::csfloat::get_price(market_hash_name).await?,
                 rarity: output.rarity,
                 collection: output.collections.clone(),
                 probability: 0.0,
