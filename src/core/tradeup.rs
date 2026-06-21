@@ -204,7 +204,8 @@ pub async fn construct_tradeups(
         let ev = tradeup_outputs
             .iter()
             .map(|o| o.price as f64 * o.probability)
-            .sum();
+            .sum::<f64>()
+            * 0.97;
 
         let trade_up = TradeUp {
             input: input.clone(),
