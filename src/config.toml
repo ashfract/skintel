@@ -1,0 +1,18 @@
+# Confirm that CSFLOAT_API_KEY is assigned in skintel/.env
+# CSFLOAT_API_KEY=""
+
+budget = 2000 # In US cents
+
+collections = [
+    "The Falchion Collection",
+    "The Spectrum 2 Collection",
+    "The Radiant Collection",
+    "The Ascent Collection",
+    "The Chroma 3 Collection",
+    "The Gamma 2 Collection",
+    "The Prisma Collection",
+    "The Clutch Collection",
+    "The 2018 Inferno Collection",
+    "The Achroma Collection",
+    "The Train 2025 Collection",
+]

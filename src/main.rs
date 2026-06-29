@@ -5,6 +5,9 @@ use std::collections::HashMap;
 use std::env;
 use tokio::{self};
 
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+
 use crate::core::tradeup::{
     construct_tradeups, get_profitable_targets, get_valid_targets, group_skins, process_tradeups,
 };
@@ -19,6 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let metadata = data::bymekel::get_skins().await?; // works
     let collections = group_skins(metadata).await; // works
     let mut candidates = get_valid_targets(&collections, &Rarity::MilSpec, &Rarity::Restricted);
+    candidates.shuffle(&mut thread_rng());
     candidates.truncate(10);
     let profitable = get_profitable_targets(&collections, candidates, &mut price_cache).await?;
     let tradeups = construct_tradeups(&collections, profitable).await?;

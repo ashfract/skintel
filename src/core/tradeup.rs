@@ -80,7 +80,7 @@ pub async fn get_profitable_targets(
                 p
             }
         };
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
         let input_pool = collections
             .get(&target.collections)
@@ -100,7 +100,7 @@ pub async fn get_profitable_targets(
             let listings =
                 data::market::csfloat::get_specific_listings(skin.paint_index, denormalised_max, 1)
                     .await;
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             let sample = match listings {
                 Ok(v) => v.into_iter().next(),
                 Err(_) => continue,
@@ -111,6 +111,8 @@ pub async fn get_profitable_targets(
             };
             sample.min_float = Some(skin.min_float);
             sample.max_float = Some(skin.max_float);
+            sample.collection = skin.collections.clone();
+            sample.rarity = skin.rarity;
             inputs.push(sample);
         }
         inputs.sort_by_key(|i| i.price);
@@ -191,7 +193,7 @@ pub async fn construct_tradeups(
                 min_float: Some(output.min_float),
                 max_float: Some(output.max_float),
             };
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             tradeup_outputs.push(tradeup_output);
         }
         let probability = 1.0 / tradeup_outputs.len() as f64; // PLACEHOLDER UNTIL FILLERS
@@ -233,5 +235,8 @@ pub async fn process_tradeups(tradeups: Vec<TradeUp>) -> Vec<TradeUp> {
         "[PROCESS] {} profitable tradeups after filtering",
         tradeups.len()
     );
+    for t in &tradeups {
+        println!(" - {} (roi: {:.2}%", t.input.collection, t.roi * 100.0);
+    }
     tradeups
 }
