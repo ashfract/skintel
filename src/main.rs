@@ -3,6 +3,7 @@ mod data;
 mod models;
 use std::collections::HashMap;
 use std::env;
+use tabled::grid::config;
 use tokio::{self};
 
 use rand::seq::SliceRandom;
@@ -17,10 +18,17 @@ use crate::models::Rarity;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _args: Vec<String> = env::args().collect();
 
+    let config_str = std::fs::read_to_string("config.toml")?;
+    let config: models::Config = toml::from_str(&config_str)?;
+
     let mut price_cache: HashMap<String, u64> = HashMap::new();
 
     let metadata = data::bymekel::get_skins().await?; // works
     let collections = group_skins(metadata).await; // works
+    let collections: HashMap<String, HashMap<Rarity, Vec<models::Skin>>> = collections
+        .into_iter()
+        .filter(|(name, _)| config.collections.contains(name))
+        .collect();
     let mut candidates = get_valid_targets(&collections, &Rarity::MilSpec, &Rarity::Restricted);
     candidates.shuffle(&mut thread_rng());
     candidates.truncate(10);

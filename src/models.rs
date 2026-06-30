@@ -114,3 +114,9 @@ pub struct TradeUp {
     pub ev: f64,
     pub roi: f64,
 }
+
+#[derive(Deserialize, Debug)]
+pub struct Config {
+    pub budget: u64,
+    pub collections: Vec<String>,
+}
